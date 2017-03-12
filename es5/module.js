@@ -8,7 +8,7 @@ var module = (function (sL) {
     var data = 'some data'; //private variable
 
     return {
-        //∑ public method
+        // public method
         someMethod: function () {
             return sL(data);
         }
