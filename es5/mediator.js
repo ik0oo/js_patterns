@@ -6,72 +6,102 @@
  * Кроме того, этот шаблон проектирования,
  * предотвращая прямое взаимодействие различных компонентов системы,
  * способствует ослаблению связей в коде.
- * В нашей системе он также помогает в решении проблем, связанных с зависимостями модулей.
  *
- * http://largescalejs.ru/the-mediator-pattern/
+ * https://habrahabr.ru/post/132472/
  */
 
-var mediator = (function () {
+var Daddy = (function () {
     'use strict';
 
-    function subscribe (channel, fn) {
-        if (!mediator.channels[channel]) mediator.channels[channel] = [];
+    function Daddy () {
 
-        mediator.channels[channel].push({
-            context: this,
-            callback: fn
-        });
-
-        return this;
     }
 
-    function publish (channel) {
-        if (!mediator.channels[channel]) return false;
+    Daddy.prototype = {
+        constructor: Daddy,
+        getBeer: function () {
+            if (!kitchen.tryToGetBeer()) {
+                console.log("Daddy: Who the hell drank all my beer?");
+                return false;
+            }
 
-        var args = [].slice.call(arguments, 1);
-        mediator.channels[channel].forEach(function (cn) {
-            cn.callback.apply(cn.context, args);
-        });
-
-        return this;
-    }
-
-    return {
-        channels: {},
-        publish: publish,
-        subscribe: subscribe,
-        installTo: function (obj) {
-            obj.subscribe = subscribe;
-            obj.publish = publish;
+            console.log("Daddy: Yeeah! My beeer!");
+            kitchen.oneBeerHasGone();
+            return true;
+        },
+        argueBack: function () {
+            console.log("Daddy: it's my last beer, for sure!");
         }
     };
+
+    return Daddy;
 })();
 
+var Mammy = (function () {
+    'use strict';
+
+    function Mammy () {
+
+    }
+
+    Mammy.prototype = {
+        constructor: Mammy,
+        argue: function () {
+            console.log("Mammy: You are f*king alconaut!");
+            kitchen.disputeStarted();
+        }
+    };
+
+    return Mammy;
+})();
+
+var BeerStorage = (function () {
+    'use strict';
+
+    function BeerStorage (beerBottleCount) {
+        this.beerBottleCount = beerBottleCount;
+    }
+
+    BeerStorage.prototype = {
+        constructor: BeerStorage,
+        takeOneBeerAway: function () {
+            if (this.beerBottleCount === 0) return false;
+
+            this.beerBottleCount--;
+            return true;
+        }
+    };
+
+    return BeerStorage;
+})();
 
 /***
- * use case
+ * mediator
  * */
 
-//Pub/sub on a centralized mediator
-var name = 'Jonny';
+var kitchen = {
+    daddy: new Daddy,
+    mammy: new Mammy,
+    refrigerator: new BeerStorage(3),
+    stash: new BeerStorage(2),
 
-mediator.subscribe('changeName', function (arg) {
-    console.log(name);
-    name = arg;
-    console.log(name);
-});
+    tryToGetBeer: function () {
+        if (this.refrigerator.takeOneBeerAway()) return true;
+        if (this.stash.takeOneBeerAway()) return true;
 
-mediator.publish('changeName', 'Frank');
+        return false;
+    },
+    oneBeerHasGone: function () {
+        this.mammy.argue();
+    },
+    disputeStarted: function () {
+        this.daddy.argueBack();
+    }
+};
 
-
-//Pub/sub via third party mediator
-var obj = {name: 'Sam'};
-mediator.installTo(obj);
-
-obj.subscribe('updateName', function (arg) {
-    console.log(this.name);
-    this.name = arg;
-    console.log(this.name);
-});
-
-obj.publish('updateName', 'Bobby');
+//test
+var roundCounter = 0;
+while (kitchen.daddy.getBeer()) {
+    roundCounter++;
+    console.log(roundCounter + ' round passed');
+}
